@@ -23,11 +23,6 @@ public class RestAssuredTest {
         given().
                 when().
                 get("https://jsonplaceholder.typicode.com/posts").
-                then().
-                statusCode(200);
-        given().
-                when().
-                get("https://jsonplaceholder.typicode.com/posts").
                 then().body("userId", hasItem(4),
                         "id", hasItem(40));
         Response response = given().
@@ -35,10 +30,12 @@ public class RestAssuredTest {
                 get("https://jsonplaceholder.typicode.com/posts").
                 then().extract().response();
 
-        JSONArray array = new JSONArray();
+        assertThat(response.getStatusCode(),is(equalTo(200)));
+        JSONArray array = new JSONArray(response.asString());
         for (int i=0; i<array.length();i++){
             Boolean test = array.getJSONObject(i).has("title");
             assertThat(String.valueOf(test), true);
+            System.out.println(array.getJSONObject(i).get("title"));
             array.getJSONObject(i).get("title");
         }
     }
@@ -47,15 +44,6 @@ public class RestAssuredTest {
     public void PutCallTest(){
         RestAssured.useRelaxedHTTPSValidation();
         File jsonFile = new File("src/test/resources/postData.json");
-        given().
-            baseUri("https://reqres.in/api").
-            body(jsonFile).
-            header("Content-Type", "application/json").
-        when().
-            put("/users").
-        then().
-            statusCode(200);
-
         Response response = given().
                 baseUri("https://reqres.in/api").
                 body(jsonFile).
@@ -67,5 +55,6 @@ public class RestAssuredTest {
         JSONObject obj = new JSONObject(response.asString());
         assertThat(obj.get("name"),is(equalTo("Arun")));
         assertThat(obj.get("job"),is(equalTo("Manager")));
+        assertThat(response.getStatusCode(),is(equalTo(200)));
     }
 }
