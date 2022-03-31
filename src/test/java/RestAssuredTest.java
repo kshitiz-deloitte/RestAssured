@@ -3,6 +3,7 @@ import io.restassured.RestAssured.*;
 import io.restassured.matcher.RestAssuredMatchers.*;
 import io.restassured.path.json.JsonPath;
 import io.restassured.response.Response;
+import static io.restassured.module.jsv.JsonSchemaValidator.matchesJsonSchemaInClasspath;
 import org.hamcrest.Matchers.*;
 
 import org.json.*;
@@ -20,24 +21,24 @@ public class RestAssuredTest {
     @Test
     public void GetCallTest(){
         RestAssured.useRelaxedHTTPSValidation();
-        given().
-                when().
-                get("https://jsonplaceholder.typicode.com/posts").
-                then().body("userId", hasItem(4),
-                        "id", hasItem(40));
+
         Response response = given().
                 when().
                 get("https://jsonplaceholder.typicode.com/posts").
-                then().extract().response();
+                then().
+                body(matchesJsonSchemaInClasspath("json_schema_json_placeholder.json")).
+                body("userId", hasItem(4),
+                        "id", hasItem(40)).
+                extract().response();
 
         assertThat(response.getStatusCode(),is(equalTo(200)));
-        JSONArray array = new JSONArray(response.asString());
-        for (int i=0; i<array.length();i++){
-            Boolean test = array.getJSONObject(i).has("title");
-            assertThat(String.valueOf(test), true);
-            System.out.println(array.getJSONObject(i).get("title"));
-            array.getJSONObject(i).get("title");
-        }
+//        JSONArray array = new JSONArray(response.asString());
+//        for (int i=0; i<array.length();i++){
+//            Boolean test = array.getJSONObject(i).has("title");
+//            assertThat(String.valueOf(test), true);
+//            array.getJSONObject(i).get("title");
+//        }
+
     }
 
     @Test
