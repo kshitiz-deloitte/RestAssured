@@ -21,24 +21,24 @@ public class RestAssuredTest {
     @Test
     public void GetCallTest(){
         RestAssured.useRelaxedHTTPSValidation();
-
+        boolean test = false;
         Response response = given().
                 when().
                 get("https://jsonplaceholder.typicode.com/posts").
                 then().
                 body(matchesJsonSchemaInClasspath("json_schema_json_placeholder.json")).
-                body("userId", hasItem(4),
-                        "id", hasItem(40)).
                 extract().response();
 
+        JSONArray array = new JSONArray(response.asString());
+        for (int i=0; i<array.length();i++){
+            if (Integer.parseInt(array.getJSONObject(i).get("id").toString())==40){
+                if (Integer.parseInt(array.getJSONObject(i).get("userId").toString())==4){
+                    test = true;
+                }
+            }
+        }
+        Assert.assertTrue(test);
         assertThat(response.getStatusCode(),is(equalTo(200)));
-//        JSONArray array = new JSONArray(response.asString());
-//        for (int i=0; i<array.length();i++){
-//            Boolean test = array.getJSONObject(i).has("title");
-//            assertThat(String.valueOf(test), true);
-//            array.getJSONObject(i).get("title");
-//        }
-
     }
 
     @Test
@@ -52,7 +52,6 @@ public class RestAssuredTest {
                 when().
                 put("/users").
                 then().extract().response();
-
         JSONObject obj = new JSONObject(response.asString());
         assertThat(obj.get("name"),is(equalTo("Arun")));
         assertThat(obj.get("job"),is(equalTo("Manager")));
