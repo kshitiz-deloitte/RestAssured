@@ -1,18 +1,15 @@
+package MiniAssignment1;
+
 import io.restassured.RestAssured;
-import io.restassured.RestAssured.*;
-import io.restassured.matcher.RestAssuredMatchers.*;
-import io.restassured.path.json.JsonPath;
 import io.restassured.response.Response;
-import static io.restassured.module.jsv.JsonSchemaValidator.matchesJsonSchemaInClasspath;
-import org.hamcrest.Matchers.*;
 
 import org.json.*;
-
 import org.testng.Assert;
 import org.testng.annotations.Test;
 
 import java.io.File;
 
+import static io.restassured.module.jsv.JsonSchemaValidator.matchesJsonSchemaInClasspath;
 import static io.restassured.RestAssured.given;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.*;
@@ -37,6 +34,7 @@ public class RestAssuredTest {
                 }
             }
         }
+
         Assert.assertTrue(test);
         assertThat(response.getStatusCode(),is(equalTo(200)));
     }
@@ -45,6 +43,7 @@ public class RestAssuredTest {
     public void PutCallTest(){
         RestAssured.useRelaxedHTTPSValidation();
         File jsonFile = new File("src/test/resources/postData.json");
+        System.out.println(jsonFile.getAbsolutePath());
         Response response = given().
                 baseUri("https://reqres.in/api").
                 body(jsonFile).
