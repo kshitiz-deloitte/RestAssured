@@ -4,7 +4,6 @@ package MainAssignment;
 import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileInputStream;
-import java.io.FileOutputStream;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.math.BigDecimal;
@@ -14,27 +13,23 @@ import org.apache.poi.hssf.usermodel.HSSFWorkbook;
 import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.ss.usermodel.Cell;
 import org.apache.poi.ss.usermodel.CellType;
-import org.apache.poi.ss.usermodel.Header;
 import org.apache.poi.ss.usermodel.Sheet;
 import org.apache.poi.ss.usermodel.Workbook;
-import org.apache.poi.xssf.usermodel.XSSFWorkbook;
-import org.openqa.selenium.json.Json;
-import com.google.gson.Gson;
-import com.google.gson.stream.JsonReader;
 import net.sf.json.JSONObject;
 public class ExcelParser {
-    public static void main(String[] args)
+//    public static void main(String[] args)
+//    {
+//        // You can specify your excel file path.
+//        String excelFilePath = "src/test/resources/Data.xls";
+//        // This method will read each sheet data from above excel file and create a JSON and a text file to save the sheet data.
+//        createJSONAndTextFileFromExcel(excelFilePath);
+//    }
+//    /* Read data from an excel file and output each sheet data to a json file and a text file.
+//     * filePath :  The excel file store path.
+//     * */
+    public static ArrayList<String> createJSONAndTextFileFromExcel(String filePath, String sheetName)
     {
-        // You can specify your excel file path.
-        String excelFilePath = "C:\\Users\\kbhurtel\\Desktop\\Test.xls";
-        // This method will read each sheet data from above excel file and create a JSON and a text file to save the sheet data.
-        creteJSONAndTextFileFromExcel(excelFilePath);
-    }
-    /* Read data from an excel file and output each sheet data to a json file and a text file.
-     * filePath :  The excel file store path.
-     * */
-    private static void creteJSONAndTextFileFromExcel(String filePath)
-    {
+        ArrayList<String> ret = new ArrayList<>();
         try{
             /* First need to open the file. */
             FileInputStream fInputStream = new FileInputStream(filePath.trim());
@@ -46,31 +41,21 @@ public class ExcelParser {
             // Get all excel sheet count.
             int totalSheetNumber = excelWorkBook.getNumberOfSheets();
             // Loop in all excel sheet.
-            for(int i=0;i<totalSheetNumber;i++)
-            {
-                // Get current sheet.
-                Sheet sheet = excelWorkBook.getSheetAt(i);
-                // Get sheet name.
-                String sheetName = sheet.getSheetName();
+            Sheet sheet = excelWorkBook.getSheet(sheetName);
+
                 if(sheetName != null && sheetName.length() > 0)
                 {
                     // Get current sheet data in a list table.
                     List<List<String>> sheetDataTable = getSheetDataList(sheet);
                     // Generate JSON format of above sheet data and write to a JSON file.
-                    String jsonString = getJSONStringFromList(sheetDataTable);
-                    String jsonFileName = sheet.getSheetName() + ".json";
-                    writeStringToFile(jsonString, jsonFileName);
-                    // Generate text table format of above sheet data and write to a text file.
-                    String textTableString = getTextTableStringFromList(sheetDataTable);
-                    String textTableFileName = sheet.getSheetName() + ".txt";
-                    writeStringToFile(textTableString, textTableFileName);
+                    ret = getJSONStringFromList(sheetDataTable);
                 }
-            }
             // Close excel work book object.
             excelWorkBook.close();
         }catch(Exception ex){
             System.err.println(ex.getMessage());
         }
+        return ret;
     }
     /* Return sheet data in a two dimensional list.
      * Each element in the outer list is represent a row,
@@ -126,12 +111,12 @@ public class ExcelParser {
                 ret.add(rowDataList);
             }
         }
-        System.out.println(ret);
         return ret;
     }
     /* Return a JSON string from the string list. */
-    private static String getJSONStringFromList(List<List<String>> dataTable)
+    private static ArrayList<String> getJSONStringFromList(List<List<String>> dataTable)
     {
+        ArrayList<String> jsonData = new ArrayList<>();
         String ret = "";
         if(dataTable != null)
         {
@@ -143,6 +128,7 @@ public class ExcelParser {
                 // The first row is the header row, store each column name.
                 List<String> headerRow = dataTable.get(0);
                 int columnCount = headerRow.size();
+
                 // Loop in the row data list.
                 for(int i=1; i<rowCount; i++)
                 {
@@ -156,13 +142,16 @@ public class ExcelParser {
                         String columnValue = dataRow.get(j);
                         rowJsonObject.put(columnName, columnValue);
                     }
+
                     tableJsonObject.put("Row " + i, rowJsonObject);
+                    jsonData.add(rowJsonObject.toString());
+
                 }
                 // Return string format data of JSONObject object.
                 ret = tableJsonObject.toString();
             }
         }
-        return ret;
+        return jsonData;
     }
     /* Return a text table string from the string list. */
     private static String getTextTableStringFromList(List<List<String>> dataTable)
