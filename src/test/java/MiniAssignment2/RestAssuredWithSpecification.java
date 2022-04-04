@@ -2,13 +2,11 @@ package MiniAssignment2;
 
 import io.restassured.RestAssured;
 import io.restassured.builder.RequestSpecBuilder;
-import io.restassured.builder.ResponseBuilder;
 import io.restassured.builder.ResponseSpecBuilder;
 import io.restassured.http.ContentType;
 import io.restassured.response.Response;
 import io.restassured.specification.RequestSpecification;
 import io.restassured.specification.ResponseSpecification;
-import org.apache.http.client.methods.RequestBuilder;
 import org.json.JSONArray;
 import org.json.JSONObject;
 import org.testng.Assert;
@@ -43,11 +41,17 @@ public class RestAssuredWithSpecification {
 
     @Test
     public void getCall(){
+        boolean test = false;
         requestSpecBuilder.setBaseUri("https://jsonplaceholder.typicode.com/").
             addHeader("ContentType","application/json");
-        requestSpecification = RestAssured.with().spec(requestSpecBuilder.build());
-        Response response = requestSpecification.get("/posts").then().spec(responseSpecification).extract().response();
-        boolean test = false;
+        requestSpecification = RestAssured.with()
+                .spec(requestSpecBuilder.build());
+        Response response = requestSpecification
+                .get("/posts")
+                .then()
+                .spec(responseSpecification)
+                .extract()
+                .response();
         requestSpecification.then()
                 .body(matchesJsonSchemaInClasspath("json_schema_json_placeholder.json"));
         JSONArray array = new JSONArray(response.asString());
@@ -65,9 +69,8 @@ public class RestAssuredWithSpecification {
     @Test
     public void putCall(){
         File jsonFile = new File("src/test/resources/postData.json");
-        RequestSpecBuilder requestSpecBuilder1= new RequestSpecBuilder();
-        requestSpecBuilder1.setBaseUri("https://reqres.in/api");
-        requestSpecification = RestAssured.with().spec(requestSpecBuilder1.build());
+        requestSpecBuilder.setBaseUri("https://reqres.in/api");
+        requestSpecification = RestAssured.with().spec(requestSpecBuilder.build());
         requestSpecification.header("Content-Type", "application/json");
         requestSpecification.body(jsonFile);
         Response response = given().
