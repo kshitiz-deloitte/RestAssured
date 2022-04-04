@@ -18,7 +18,7 @@ public class ListenersClass implements ITestListener {
     @Override
     public void onTestStart(ITestResult result) {
 
-        sparkReporter = new ExtentSparkReporter(result.getInstanceName()+".html");
+        sparkReporter = new ExtentSparkReporter(result.getInstance().getClass().getSimpleName()+".html");
         extentReports.attachReporter(sparkReporter);
         log = LogManager.getLogger(result.getInstanceName());
         ITestListener.super.onTestStart(result);

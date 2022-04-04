@@ -3,21 +3,29 @@ package MainAssignment;
 import io.restassured.RestAssured;
 import io.restassured.builder.RequestSpecBuilder;
 import io.restassured.builder.ResponseSpecBuilder;
+import io.restassured.filter.log.ResponseLoggingFilter;
 import io.restassured.http.ContentType;
 import io.restassured.response.Response;
 import io.restassured.specification.RequestSpecification;
 import io.restassured.specification.ResponseSpecification;
 import org.apache.log4j.LogManager;
 import org.apache.log4j.Logger;
-import org.json.JSONArray;
 import org.json.JSONObject;
+import org.json.simple.parser.JSONParser;
+import org.json.simple.parser.ParseException;
+import org.testng.Assert;
 import org.testng.annotations.BeforeTest;
 import org.testng.annotations.Test;
 
 import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.PrintStream;
 import java.util.ArrayList;
 
 import static io.restassured.RestAssured.given;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.is;
 
 public class TodoListAppTest {
     RequestSpecBuilder requestSpecBuilder;
@@ -25,10 +33,11 @@ public class TodoListAppTest {
     ResponseSpecBuilder responseSpecBuilder;
     ResponseSpecification responseSpecification;
     protected static Logger log;
+    PrintStream log1;
     User user;
     ExcelParser excelParser;
     @BeforeTest
-    public void setup(){
+    public void setup() throws FileNotFoundException {
         RestAssured.useRelaxedHTTPSValidation();
         requestSpecBuilder = new RequestSpecBuilder();
         requestSpecBuilder.setBaseUri("https://api-nodejs-todolist.herokuapp.com/");
@@ -42,6 +51,8 @@ public class TodoListAppTest {
         user = new User();
         excelParser = new ExcelParser();
 
+        log1 = new PrintStream(new File("logFile.log"));
+
     }
 
     @Test(priority = 1)
@@ -52,11 +63,17 @@ public class TodoListAppTest {
         for (String detail: details){
             requestSpecification.body(detail);
             Response response = executePostAndGetResponse("/user/register");
+            JSONObject userRequestDetails = new JSONObject(detail);
             try{
-                JSONObject userDetails = new JSONObject(response.asString());
-                System.out.println(userDetails.get("token"));
+                JSONObject userResponseDetails = new JSONObject(response.asString());
+                JSONObject userObj = (JSONObject) userResponseDetails.get("user");
+                assertThat(userObj.get("email"),is(equalTo(userRequestDetails.get("email"))));
+                assertThat(userObj.get("name"),is(equalTo(userRequestDetails.get("name"))));
+                assertThat(userObj.get("age"),is(equalTo(userRequestDetails.get("age"))));
+                assertThat(response.getStatusCode(),is(equalTo(200)));
             }catch (Exception exception){
                 log.error(response.asString());
+        assertThat(response.getStatusCode(),is(equalTo(201)));
             }
         }
     }
@@ -67,10 +84,14 @@ public class TodoListAppTest {
         loginDetails = excelParser.createJSONAndTextFileFromExcel("src/test/resources/Data.xls", "Register");
         for (String detail: loginDetails){
             requestSpecification.body(detail);
+            JSONObject userRequestDetails = new JSONObject(detail);
             Response response = executePostAndGetResponse("user/login");
             try{
-                JSONObject userDetails = new JSONObject(response.asString());
-                user.setToken(userDetails.get("token").toString());
+                JSONObject userResponseDetails = new JSONObject(response.asString());
+                user.setToken(userResponseDetails.get("token").toString());
+                JSONObject userObj = (JSONObject) userResponseDetails.get("user");
+                assertThat(userObj.get("email"),is(equalTo(userRequestDetails.get("email"))));
+                assertThat(response.getStatusCode(),is(equalTo(200)));
             }catch (Exception exception){
                 log.error(response.asString());
             }
@@ -84,9 +105,14 @@ public class TodoListAppTest {
         requestSpecification.header("Authorization",
                 "Bearer " + user.getToken());
         for (String detail: taskDetails){
+            JSONObject taskRequestDetails = new JSONObject(detail);
             requestSpecification.body(detail);
             Response response = executePostAndGetResponse("/task");
-            System.out.println(response.asString());
+            JSONObject taskResponseDetails = new JSONObject(response.asString());
+            JSONObject taskObj = (JSONObject) taskResponseDetails.get("data");
+            assertThat(taskObj.get("description").toString().trim(),is(equalTo(taskRequestDetails.get("description"))));
+            assertThat(response.getStatusCode(),is(equalTo(201)));
+            break;
         }
     }
 
@@ -94,18 +120,13 @@ public class TodoListAppTest {
     public void getTasks(){
         requestSpecification.header("Authorization",
                 "Bearer " + user.getToken());
-        requestSpecBuilder.addQueryParam("limit", "2");
-        requestSpecification.spec(requestSpecBuilder.build());
-        Response response = executeGetAndGetResponse("/task");
+        Response response = executeGetAndGetResponse("/task","limit", "2");
         System.out.println(response.asString());
-        requestSpecBuilder.addQueryParam("limit", "5");
-        requestSpecification.spec(requestSpecBuilder.build());
-        response = executeGetAndGetResponse("/task");
+        response = executeGetAndGetResponse("/task", "limit", "5");
         System.out.println(response.asString());
-        requestSpecBuilder.addQueryParam("limit", "10");
-        requestSpecification.spec(requestSpecBuilder.build());
-        response = executeGetAndGetResponse("/task");
+        response = executeGetAndGetResponse("/task", "limit", "10");
         System.out.println(response.asString());
+        assertThat(response.getStatusCode(),is(equalTo(200)));
 
 //        JSONArray array = new JSONArray(response.asString());
     }
@@ -114,6 +135,7 @@ public class TodoListAppTest {
         return given().
                 spec(requestSpecification).
                 when().
+                filter(ResponseLoggingFilter.logResponseTo(log1)).
                 post(path).
                 then().
                 spec(responseSpecification).
@@ -121,10 +143,11 @@ public class TodoListAppTest {
                 response();
     }
 
-    private Response executeGetAndGetResponse(String path){
+    private Response executeGetAndGetResponse(String path, String query, String value){
         return given().
                 spec(requestSpecification).
-                queryParam("").
+                queryParam(query, value).
+                filter(ResponseLoggingFilter.logResponseTo(log1)).
                 when().
                 get(path).
                 then().
